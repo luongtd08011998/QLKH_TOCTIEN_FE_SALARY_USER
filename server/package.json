@@ -1,0 +1,19 @@
+{
+  "name": "hoidanit-admin-hr",
+  "version": "0.1.0",
+  "private": true,
+  "author": {
+    "name": "Hỏi Dân IT vs Eric",
+    "url": "https://hoidanit.vn"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js"
+  },
+  "keywords": [],
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "17.3.1",
+    "express": "5.2.1"
+  }
+}
