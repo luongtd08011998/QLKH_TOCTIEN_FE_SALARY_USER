@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { createColumnHelper } from "@tanstack/react-table";
 import {
     Plus,
@@ -22,11 +22,12 @@ import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { AccessDenied } from "@/components/common/AccessDenied";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
+import { Select } from "@/components/ui/Select";
 import { SalaryForm } from "./SalaryForm";
 import { SalaryImportModal } from "./SalaryImportModal";
 import { SalarySlipModal } from "./SalarySlipModal";
 import { is403Error } from "@/utils/is403Error";
-import type { SalaryResponse } from "../types";
+import type { SalaryResponse, SalarySendStatus } from "../types";
 import dayjs from "dayjs";
 
 const columnHelper = createColumnHelper<SalaryResponse>();
@@ -46,18 +47,23 @@ function SendAllModal({
     onClose: () => void;
 }) {
     const [yearMonth, setYearMonth] = useState("");
+    const [sendScope, setSendScope] = useState<"" | "UNSENT" | "FAILED">("");
     const sendAll = useSendAllSalaryEmails();
 
     function handleClose() {
         sendAll.reset();
         setYearMonth("");
+        setSendScope("");
         onClose();
     }
 
     function handleSend() {
         if (!yearMonth) return;
         const ym = yearMonth.replace("-", ""); // "2025-02" → "202502"
-        sendAll.mutate(ym);
+        sendAll.mutate({
+            yearMonth: ym,
+            sendStatus: sendScope || undefined,
+        });
     }
 
     const batch = sendAll.isSuccess ? sendAll.data?.data : undefined;
@@ -84,6 +90,18 @@ function SendAllModal({
                                    disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                 </div>
+
+                <Select
+                    label="Phạm vi gửi"
+                    value={sendScope}
+                    onChange={(e) => setSendScope(e.target.value as "" | "UNSENT" | "FAILED")}
+                    disabled={sendAll.isPending}
+                    options={[
+                        { label: "Chưa gửi + Thất bại (mặc định)", value: "" },
+                        { label: "Chỉ chưa gửi (UNSENT)", value: "UNSENT" },
+                        { label: "Chỉ thất bại (FAILED)", value: "FAILED" },
+                    ]}
+                />
 
                 {sendAll.isSuccess && batch != null && (
                     <div className="space-y-3 text-sm">
@@ -157,6 +175,7 @@ export function SalaryListPage() {
     const [page, setPage] = useState(1);
     const [size, setSize] = useState(10);
     const [search, setSearch] = useState("");
+    const [sendStatus, setSendStatus] = useState<SalarySendStatus | "">("");
     const [showForm, setShowForm] = useState(false);
     const [showImport, setShowImport] = useState(false);
     const [showSlip, setShowSlip] = useState(false);
@@ -164,9 +183,13 @@ export function SalaryListPage() {
     const [editSalary, setEditSalary] = useState<SalaryResponse | null>(null);
     const [previewSalary, setPreviewSalary] = useState<SalaryResponse | null>(null);
     const [deleteId, setDeleteId] = useState<number | null>(null);
-    const sendingIdRef = useRef<number | null>(null);
+    const [sendingId, setSendingId] = useState<number | null>(null);
 
-    const { data, isLoading, error } = useSalaries({ page, size });
+    const { data, isLoading, error } = useSalaries({
+        page,
+        size,
+        ...(sendStatus ? { sendStatus } : {}),
+    });
     const deleteSalary = useDeleteSalary();
     const sendEmail = useSendSalaryEmail();
 
@@ -195,6 +218,31 @@ export function SalaryListPage() {
         columnHelper.accessor("netAmount", {
             header: "Thực lĩnh",
             cell: (info) => previewText(info.getValue(), 32),
+        }),
+        columnHelper.accessor("reserve1", {
+            header: "Trạng thái gửi",
+            cell: (info) => {
+                const v = (info.getValue() ?? "").trim().toUpperCase();
+                if (v === "SENT") {
+                    return (
+                        <span className="inline-flex items-center rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 text-xs">
+                            Đã gửi
+                        </span>
+                    );
+                }
+                if (v === "FAILED") {
+                    return (
+                        <span className="inline-flex items-center rounded-full bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 text-xs">
+                            Thất bại
+                        </span>
+                    );
+                }
+                return (
+                    <span className="inline-flex items-center rounded-full bg-slate-50 text-slate-700 border border-slate-200 px-2 py-0.5 text-xs">
+                        Chưa gửi
+                    </span>
+                );
+            },
         }),
         columnHelper.accessor("modifiedDate", {
             header: "Cập nhật",
@@ -226,11 +274,13 @@ export function SalaryListPage() {
                         type="button"
                         title="Gửi phiếu lương qua email"
                         disabled={
-                            sendEmail.isPending && sendingIdRef.current === row.original.id
+                            sendEmail.isPending && sendingId === row.original.id
                         }
                         onClick={() => {
-                            sendingIdRef.current = row.original.id;
-                            sendEmail.mutate(row.original.id);
+                            setSendingId(row.original.id);
+                            sendEmail.mutate(row.original.id, {
+                                onSettled: () => setSendingId(null),
+                            });
                         }}
                         className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors disabled:opacity-40"
                     >
@@ -313,11 +363,29 @@ export function SalaryListPage() {
             </div>
 
             <div className="mb-4">
-                <SearchBar
-                    value={search}
-                    onChange={setSearch}
-                    placeholder="Tìm theo kỳ, mã NV, thu nhập, thực lĩnh..."
-                />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="md:col-span-2">
+                        <SearchBar
+                            value={search}
+                            onChange={setSearch}
+                            placeholder="Tìm theo kỳ, mã NV, thu nhập, thực lĩnh..."
+                        />
+                    </div>
+                    <Select
+                        label="Trạng thái gửi"
+                        value={sendStatus}
+                        onChange={(e) => {
+                            setSendStatus(e.target.value as SalarySendStatus | "");
+                            setPage(1);
+                        }}
+                        options={[
+                            { label: "Tất cả", value: "" },
+                            { label: "Chưa gửi (UNSENT)", value: "UNSENT" },
+                            { label: "Đã gửi (SENT)", value: "SENT" },
+                            { label: "Thất bại (FAILED)", value: "FAILED" },
+                        ]}
+                    />
+                </div>
             </div>
 
             <DataTable

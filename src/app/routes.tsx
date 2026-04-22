@@ -36,6 +36,10 @@ export const router = createBrowserRouter([
                 lazy: () => import("@/features/employee/components/EmployeeListPage"),
             },
             {
+                path: "staff",
+                lazy: () => import("@/features/staff/components/StaffListPage"),
+            },
+            {
                 path: "salaries",
                 lazy: () => import("@/features/salary/components/SalaryListPage"),
             },

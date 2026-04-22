@@ -8,7 +8,7 @@ interface SelectOption {
 interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
     label?: string;
     error?: string;
-    options: SelectOption[];
+    options?: SelectOption[];
     placeholder?: string;
 }
 
@@ -18,6 +18,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
         ref,
     ) {
         const selectId = id || label?.toLowerCase().replace(/\s+/g, "-");
+        const safeOptions = options ?? [];
 
         return (
             <div className="flex flex-col gap-1.5">
@@ -43,11 +44,12 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
                             {placeholder}
                         </option>
                     )}
-                    {options.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                        </option>
-                    ))}
+                    {props.children ??
+                        safeOptions.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                                {opt.label}
+                            </option>
+                        ))}
                 </select>
                 {error && (
                     <p className="text-xs text-red-600 mt-0.5">{error}</p>

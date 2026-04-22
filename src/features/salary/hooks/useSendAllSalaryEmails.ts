@@ -1,12 +1,16 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { salaryApi } from "../api";
+import type { SalarySendStatus } from "../types";
 
 export function useSendAllSalaryEmails() {
+    const qc = useQueryClient();
     return useMutation({
-        mutationFn: (yearMonth: string) =>
-            salaryApi.sendAll(yearMonth).then((res) => res.data),
-        onSuccess: (data) => {
+        mutationFn: (vars: {
+            yearMonth: string;
+            sendStatus?: Extract<SalarySendStatus, "UNSENT" | "FAILED">;
+        }) => salaryApi.sendAll(vars.yearMonth, vars.sendStatus).then((res) => res.data),
+        onSuccess: async (data) => {
             const result = data.data;
             if (result && result.failCount === 0 && result.successCount > 0) {
                 toast.success(`Đã gửi thành công ${result.successCount} phiếu lương!`);
@@ -17,6 +21,7 @@ export function useSendAllSalaryEmails() {
             } else if (result?.errors?.length) {
                 toast.error(result.errors[0] ?? "Không gửi được phiếu lương nào.");
             }
+            await qc.invalidateQueries({ queryKey: ["salaries"] });
         },
         onError: (err: unknown) => {
             const message =

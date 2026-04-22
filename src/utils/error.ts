@@ -4,7 +4,7 @@ import type { ApiResponse } from "@/types/api";
 export function getErrorMessage(error: unknown, defaultMessage = "S\u1ef1 c\u1ed1 kh\u00f4ng x\u00e1c \u0111\u1ecbnh"): string {
     if (!error) return defaultMessage;
 
-    const axiosError = error as AxiosError<ApiResponse<any> & { details?: string[] }>;
+    const axiosError = error as AxiosError<ApiResponse<unknown> & { details?: string[] }>;
     const responseData = axiosError.response?.data;
 
     if (responseData) {

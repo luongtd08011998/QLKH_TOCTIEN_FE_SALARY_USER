@@ -1,32 +1,31 @@
 import { useState } from "react";
 import { createColumnHelper } from "@tanstack/react-table";
 import { Plus, Pencil, Trash2, Upload } from "lucide-react";
-import { useEmployees } from "../hooks/useEmployees";
-import { useDeleteEmployee } from "../hooks/useDeleteEmployee";
+import { useStaffs } from "../hooks/useStaffs";
+import { useDeleteStaff } from "../hooks/useDeleteStaff";
 import { DataTable } from "@/components/common/DataTable";
 import { SearchBar } from "@/components/common/SearchBar";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { AccessDenied } from "@/components/common/AccessDenied";
 import { Button } from "@/components/ui/Button";
-import { EmployeeForm } from "./EmployeeForm";
-import { EmployeeImportModal } from "./EmployeeImportModal";
+import { StaffForm } from "./StaffForm";
+import { StaffImportModal } from "./StaffImportModal";
 import { is403Error } from "@/utils/is403Error";
-import type { EmployeeResponse } from "../types";
-import dayjs from "dayjs";
+import type { StaffResponse } from "../types";
 
-const columnHelper = createColumnHelper<EmployeeResponse>();
+const columnHelper = createColumnHelper<StaffResponse>();
 
-export function EmployeeListPage() {
+export function StaffListPage() {
     const [page, setPage] = useState(1);
     const [size, setSize] = useState(10);
     const [search, setSearch] = useState("");
     const [showForm, setShowForm] = useState(false);
-    const [editEmployee, setEditEmployee] = useState<EmployeeResponse | null>(null);
+    const [editStaff, setEditStaff] = useState<StaffResponse | null>(null);
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [showImport, setShowImport] = useState(false);
 
-    const { data, isLoading, error } = useEmployees({ page, size });
-    const deleteEmployee = useDeleteEmployee();
+    const { data, isLoading, error } = useStaffs({ page, size });
+    const deleteStaff = useDeleteStaff();
 
     if (is403Error(error)) {
         return <AccessDenied />;
@@ -39,27 +38,20 @@ export function EmployeeListPage() {
                 <span className="font-medium text-slate-900">{info.getValue()}</span>
             ),
         }),
-        columnHelper.accessor("phone", {
-            header: "Điện thoại",
-            cell: (info) => info.getValue() ?? "—",
-        }),
         columnHelper.accessor("email", {
             header: "Email",
             cell: (info) => info.getValue() ?? "—",
         }),
-        columnHelper.accessor("department", {
-            header: "Phòng ban",
-            cell: (info) => info.getValue() ?? "—",
+        columnHelper.accessor("userId", {
+            header: "User ID",
+            cell: (info) => (info.getValue() == null ? "—" : String(info.getValue())),
         }),
-        columnHelper.accessor("salaryCode", {
-            header: "Mã BL",
-            cell: (info) => info.getValue() ?? "—",
-        }),
-        columnHelper.accessor("entryDate", {
-            header: "Vào làm",
+        columnHelper.accessor("isActive", {
+            header: "Trạng thái",
             cell: (info) => {
                 const v = info.getValue();
-                return v ? dayjs(v).format("DD/MM/YYYY HH:mm") : "—";
+                if (!v) return "—";
+                return v === "HOAT_DONG" ? "Hoạt động" : "Không hoạt động";
             },
         }),
         columnHelper.display({
@@ -70,7 +62,7 @@ export function EmployeeListPage() {
                     <button
                         type="button"
                         onClick={() => {
-                            setEditEmployee(row.original);
+                            setEditStaff(row.original);
                             setShowForm(true);
                         }}
                         className="p-1.5 rounded-lg text-slate-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
@@ -92,11 +84,10 @@ export function EmployeeListPage() {
     const rows = data?.data.result ?? [];
     const filteredData = search
         ? rows.filter(
-              (e) =>
-                  e.fullName.toLowerCase().includes(search.toLowerCase()) ||
-                  (e.phone ?? "").toLowerCase().includes(search.toLowerCase()) ||
-                  (e.email ?? "").toLowerCase().includes(search.toLowerCase()) ||
-                  (e.code ?? "").toLowerCase().includes(search.toLowerCase()),
+              (s) =>
+                  s.fullName.toLowerCase().includes(search.toLowerCase()) ||
+                  (s.email ?? "").toLowerCase().includes(search.toLowerCase()) ||
+                  String(s.userId ?? "").includes(search),
           )
         : rows;
 
@@ -104,8 +95,8 @@ export function EmployeeListPage() {
         <div>
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900">Nhân viên</h1>
-                    <p className="text-slate-500 mt-1">Quản lý nhân viên (legacy employee)</p>
+                    <h1 className="text-2xl font-bold text-slate-900">Nhân sự</h1>
+                    <p className="text-slate-500 mt-1">Quản lý staff (legacy staff)</p>
                 </div>
                 <div className="flex items-center gap-2">
                     <Button variant="secondary" onClick={() => setShowImport(true)}>
@@ -114,12 +105,12 @@ export function EmployeeListPage() {
                     </Button>
                     <Button
                         onClick={() => {
-                            setEditEmployee(null);
+                            setEditStaff(null);
                             setShowForm(true);
                         }}
                     >
                         <Plus className="w-4 h-4" />
-                        Thêm nhân viên
+                        Thêm nhân sự
                     </Button>
                 </div>
             </div>
@@ -128,7 +119,7 @@ export function EmployeeListPage() {
                 <SearchBar
                     value={search}
                     onChange={setSearch}
-                    placeholder="Tìm theo tên, SĐT, email, mã..."
+                    placeholder="Tìm theo tên, email, userId..."
                 />
             </div>
 
@@ -141,13 +132,13 @@ export function EmployeeListPage() {
                 onPageSizeChange={setSize}
             />
 
-            <EmployeeForm
+            <StaffForm
                 isOpen={showForm}
                 onClose={() => {
                     setShowForm(false);
-                    setEditEmployee(null);
+                    setEditStaff(null);
                 }}
-                employee={editEmployee}
+                staff={editStaff}
             />
 
             <ConfirmDialog
@@ -155,18 +146,19 @@ export function EmployeeListPage() {
                 onClose={() => setDeleteId(null)}
                 onConfirm={() => {
                     if (deleteId) {
-                        deleteEmployee.mutate(deleteId, {
+                        deleteStaff.mutate(deleteId, {
                             onSuccess: () => setDeleteId(null),
                         });
                     }
                 }}
-                message="Xóa nhân viên này? Có thể lỗi nếu dữ liệu legacy khác còn tham chiếu."
-                isLoading={deleteEmployee.isPending}
+                message="Xóa nhân sự này?"
+                isLoading={deleteStaff.isPending}
             />
 
-            <EmployeeImportModal isOpen={showImport} onClose={() => setShowImport(false)} />
+            <StaffImportModal isOpen={showImport} onClose={() => setShowImport(false)} />
         </div>
     );
 }
 
-export const Component = EmployeeListPage;
+export const Component = StaffListPage;
+

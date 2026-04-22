@@ -36,6 +36,8 @@ export interface SalaryResponse {
     modifiedDate: string | null;
 }
 
+export type SalarySendStatus = "SENT" | "FAILED" | "UNSENT";
+
 export interface CreateSalaryRequest {
     yearMonth: string;
     employeeId?: string;

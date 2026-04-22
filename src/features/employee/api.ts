@@ -29,4 +29,19 @@ export const employeeApi = {
     delete(id: number) {
         return api.delete<ApiResponse<null>>(`/employees/${id}`);
     },
+
+    importExcel(file: File) {
+        const form = new FormData();
+        form.append("file", file);
+        return api.post<ApiResponse<{ totalRows: number; importedCount: number }>>(
+            "/employees/import",
+            form,
+        );
+    },
+
+    downloadTemplate() {
+        return api.get("/employees/import/template", {
+            responseType: "blob",
+        });
+    },
 };

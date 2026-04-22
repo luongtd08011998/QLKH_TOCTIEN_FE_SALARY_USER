@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/Button";
 import { CompanyForm } from "./CompanyForm";
 import { is403Error } from "@/utils/is403Error";
 import type { CompanyResponse } from "../types";
-import dayjs from "dayjs";
 
 const columnHelper = createColumnHelper<CompanyResponse>();
 
@@ -37,21 +36,17 @@ export function CompanyListPage() {
                 <span className="font-medium text-slate-900">{info.getValue()}</span>
             ),
         }),
-        columnHelper.accessor("description", {
-            header: "Description",
-            cell: (info) => (
-                <span className="text-slate-500 line-clamp-2">
-                    {info.getValue() ?? "—"}
-                </span>
-            ),
-        }),
         columnHelper.accessor("address", {
             header: "Address",
             cell: (info) => info.getValue() ?? "—",
         }),
-        columnHelper.accessor("createdAt", {
-            header: "Created",
-            cell: (info) => dayjs(info.getValue()).format("DD/MM/YYYY"),
+        columnHelper.accessor("phone", {
+            header: "Phone",
+            cell: (info) => info.getValue() ?? "—",
+        }),
+        columnHelper.accessor("email", {
+            header: "Email",
+            cell: (info) => info.getValue() ?? "—",
         }),
         columnHelper.display({
             id: "actions",

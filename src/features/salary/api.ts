@@ -3,12 +3,18 @@ import type { ApiResponse, PaginatedResponse } from "@/types/api";
 import type {
     CreateSalaryRequest,
     SalaryEmailBatchResult,
+    SalarySendStatus,
     SalaryResponse,
     UpdateSalaryRequest,
 } from "./types";
 
 export const salaryApi = {
-    getAll(params?: { page?: number; size?: number; sort?: string }) {
+    getAll(params?: {
+        page?: number;
+        size?: number;
+        sort?: string;
+        sendStatus?: SalarySendStatus;
+    }) {
         return api.get<ApiResponse<PaginatedResponse<SalaryResponse>>>(
             "/salaries",
             { params },
@@ -51,9 +57,12 @@ export const salaryApi = {
         return api.post<ApiResponse<null>>(`/salaries/${id}/send-email`);
     },
 
-    sendAll(yearMonth: string) {
-        return api.post<ApiResponse<SalaryEmailBatchResult>>(
-            `/salaries/send-all?yearMonth=${yearMonth}`,
-        );
+    sendAll(yearMonth: string, sendStatus?: Extract<SalarySendStatus, "UNSENT" | "FAILED">) {
+        return api.post<ApiResponse<SalaryEmailBatchResult>>("/salaries/send-all", undefined, {
+            params: {
+                yearMonth,
+                ...(sendStatus ? { sendStatus } : {}),
+            },
+        });
     },
 };

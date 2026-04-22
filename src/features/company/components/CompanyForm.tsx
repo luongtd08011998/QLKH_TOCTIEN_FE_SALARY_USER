@@ -14,9 +14,17 @@ import { getErrorMessage } from "@/utils/error";
 
 const schema = z.object({
     name: z.string().min(1, "Company name is required"),
-    description: z.string().optional(),
     address: z.string().optional(),
     logo: z.string().optional(),
+    phone: z.string().optional(),
+    fax: z.string().optional(),
+    email: z.string().optional(),
+    website: z.string().optional(),
+    preferences: z.string().optional(),
+    directorName: z.string().optional(),
+    bankAccount: z.string().optional(),
+    taxCode: z.string().optional(),
+    locationName: z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -48,12 +56,33 @@ export function CompanyForm({ isOpen, onClose, company }: CompanyFormProps) {
             if (company) {
                 reset({
                     name: company.name,
-                    description: company.description ?? "",
                     address: company.address ?? "",
                     logo: company.logo ?? "",
+                    phone: company.phone ?? "",
+                    fax: company.fax ?? "",
+                    email: company.email ?? "",
+                    website: company.website ?? "",
+                    preferences: company.preferences ?? "",
+                    directorName: company.directorName ?? "",
+                    bankAccount: company.bankAccount ?? "",
+                    taxCode: company.taxCode ?? "",
+                    locationName: company.locationName ?? "",
                 });
             } else {
-                reset({ name: "", description: "", address: "", logo: "" });
+                reset({
+                    name: "",
+                    address: "",
+                    logo: "",
+                    phone: "",
+                    fax: "",
+                    email: "",
+                    website: "",
+                    preferences: "",
+                    directorName: "",
+                    bankAccount: "",
+                    taxCode: "",
+                    locationName: "",
+                });
             }
         }
     }, [isOpen, company, reset]);
@@ -61,9 +90,17 @@ export function CompanyForm({ isOpen, onClose, company }: CompanyFormProps) {
     function onSubmit(data: FormData) {
         const payload = {
             name: data.name,
-            description: data.description || undefined,
             address: data.address || undefined,
             logo: data.logo || undefined,
+            phone: data.phone || undefined,
+            fax: data.fax || undefined,
+            email: data.email || undefined,
+            website: data.website || undefined,
+            preferences: data.preferences || undefined,
+            directorName: data.directorName || undefined,
+            bankAccount: data.bankAccount || undefined,
+            taxCode: data.taxCode || undefined,
+            locationName: data.locationName || undefined,
         };
 
         if (isEdit && company) {
@@ -117,14 +154,34 @@ export function CompanyForm({ isOpen, onClose, company }: CompanyFormProps) {
                     {...register("name")}
                 />
                 <Input
-                    label="Description"
-                    error={errors.description?.message}
-                    {...register("description")}
-                />
-                <Input
                     label="Address"
                     error={errors.address?.message}
                     {...register("address")}
+                />
+                <Input label="Phone" error={errors.phone?.message} {...register("phone")} />
+                <Input label="Fax" error={errors.fax?.message} {...register("fax")} />
+                <Input label="Email" error={errors.email?.message} {...register("email")} />
+                <Input label="Website" error={errors.website?.message} {...register("website")} />
+                <Input
+                    label="Director Name"
+                    error={errors.directorName?.message}
+                    {...register("directorName")}
+                />
+                <Input
+                    label="Bank Account"
+                    error={errors.bankAccount?.message}
+                    {...register("bankAccount")}
+                />
+                <Input label="Tax Code" error={errors.taxCode?.message} {...register("taxCode")} />
+                <Input
+                    label="Location Name"
+                    error={errors.locationName?.message}
+                    {...register("locationName")}
+                />
+                <Input
+                    label="Preferences"
+                    error={errors.preferences?.message}
+                    {...register("preferences")}
                 />
                 <FileUpload
                     label="Company Logo"
